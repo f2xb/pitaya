@@ -14,6 +14,8 @@ func Read(filePath string, opts ...Options) (*DataTable, error) {
 		return ReadXlsx(filePath, opts...)
 	case "csv":
 		return ReadCsv(filePath, opts...)
+	case "txt":
+		return ReadTxt(filePath, opts...)
 	}
 	return nil, ErrNotSupportFileType
 }
