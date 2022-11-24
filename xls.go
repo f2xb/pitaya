@@ -3,7 +3,7 @@ package pitaya
 import (
 	"strings"
 
-	"github.com/shakinm/xlsReader/xls"
+	"github.com/f2xb/xls/xls"
 )
 
 func ReadXls(filePath string, opts ...Options) (*DataTable, error) {
