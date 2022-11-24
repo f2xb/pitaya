@@ -12,11 +12,13 @@ func ReadTxt(filePath string, opts ...Options) (*DataTable, error) {
 	}
 
 	option := parseOptions(opts...)
+	option.AllSheet = false
 
 	data := make(map[string][][]string)
 	dfs := make(map[string][]*DataFrame)
 	sheet := "Sheet1"
 	rows := make([][]string, 0)
+
 	for rIdx, row := range strings.Split(string(file), option.RowSep) {
 		cols := make([]string, 0)
 		for cIdx, str := range strings.Split(row, option.ColSep) {

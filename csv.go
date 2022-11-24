@@ -20,10 +20,12 @@ func ReadCsv(filePath string, opts ...Options) (*DataTable, error) {
 
 	option := parseOptions(opts...)
 	option.AllSheet = false
+
 	data := make(map[string][][]string)
 	dfs := make(map[string][]*DataFrame)
 	sheet := "Sheet1"
 	rows := make([][]string, len(records))
+
 	for rIdx, record := range records {
 		cols := make([]string, len(record))
 		for cIdx, str := range record {

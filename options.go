@@ -5,8 +5,8 @@ type Options struct {
 	RawValue  bool
 	TrimSpace bool
 	AllSheet  bool
-	ColSep    string
-	RowSep    string
+	ColSep    string // default \t
+	RowSep    string // default \n
 }
 
 func parseOptions(opts ...Options) *Options {
