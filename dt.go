@@ -5,10 +5,11 @@ import (
 )
 
 type DataFrame struct {
-	ColIdx int
-	RowIdx int
-	Value  string
-	Sheet  string
+	ColIdx   int
+	RowIdx   int
+	Value    string
+	RawValue string
+	Sheet    string
 }
 
 type DataTable struct {
