@@ -2,11 +2,11 @@ package pitaya
 
 type Options struct {
 	Password  string
-	RawValue  bool
 	TrimSpace bool
 	AllSheet  bool
 	ColSep    string // default \t
 	RowSep    string // default \n
+	XlsxLib   string // default 'excelize' or 'xlsx'
 }
 
 func parseOptions(opts ...Options) *Options {
