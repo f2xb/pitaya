@@ -46,5 +46,6 @@ func ReadXls(filePath string, opts ...Options) (*DataTable, error) {
 		dfs:    dfs,
 		sheets: sheets,
 		option: option,
+		Ext:    Xls,
 	}, nil
 }

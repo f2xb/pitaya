@@ -17,6 +17,7 @@ type DataTable struct {
 	dfs    map[string][]*DataFrame
 	sheets []string
 	option *Options
+	Ext    string
 }
 
 func (dt *DataTable) getDataFrames(sheetName string) []*DataFrame {

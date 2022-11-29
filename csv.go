@@ -49,5 +49,6 @@ func ReadCsv(filePath string, opts ...Options) (*DataTable, error) {
 		dfs:    dfs,
 		sheets: []string{sheet},
 		option: option,
+		Ext:    Csv,
 	}, nil
 }

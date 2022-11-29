@@ -78,6 +78,7 @@ func xlsxByExcelize(filePath string, option *Options) (*DataTable, error) {
 		dfs:    dfs,
 		sheets: f.GetSheetList(),
 		option: option,
+		Ext:    Xlsx,
 	}, nil
 }
 
@@ -131,5 +132,6 @@ func xlsxByXlsx(filePath string, option *Options) (*DataTable, error) {
 		dfs:    dfs,
 		sheets: sheets,
 		option: option,
+		Ext:    Xlsx,
 	}, nil
 }
