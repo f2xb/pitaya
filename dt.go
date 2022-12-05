@@ -110,14 +110,15 @@ func (dt *DataTable) SheetContains(sheet, str string) (dfs []*DataFrame) {
 	return
 }
 
-func (dt *DataTable) GetColByIndex(index int) (dfs []*DataFrame) {
+func (dt *DataTable) GetColByColIdx(index int) (dfs []*DataFrame) {
 	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.GetSheetColByIndex(sheet, index)...)
+		dfs = append(dfs, dt.GetSheetColColIdx(sheet, index)...)
 	}
 	return
 }
 
-func (dt *DataTable) GetSheetColByIndex(sheet string, index int) (dfs []*DataFrame) {
+func (dt *DataTable) GetSheetColColIdx(sheet string, index int) (dfs []*DataFrame) {
+	index -= 1
 	for _, df := range dt.dfs[sheet] {
 		if df.ColIdx == index {
 			dfs = append(dfs, df)
@@ -126,28 +127,78 @@ func (dt *DataTable) GetSheetColByIndex(sheet string, index int) (dfs []*DataFra
 	return
 }
 
-func (dt *DataTable) HasRow(strs ...string) bool {
+func (dt *DataTable) RowContains(str string) (dfs []*DataFrame) {
 	for _, sheet := range dt.getSheets() {
-		if list, ok := dt.data[sheet]; ok {
-			for _, rows := range list {
-				if strings.Join(rows, ",") ==
-					strings.Join(strs, ",") {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-func (dt *DataTable) GetRowByIndex(index int) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.GetSheetRowByIndex(sheet, index)...)
+		dfs = append(dfs, dt.SheetRowContains(sheet, str)...)
 	}
 	return
 }
 
-func (dt *DataTable) GetSheetRowByIndex(sheet string, index int) (dfs []*DataFrame) {
+func (dt *DataTable) SheetRowContains(sheet, str string) (dfs []*DataFrame) {
+	rowIdx := -1
+	cols := strings.Split(str, ",")
+	if len(cols) == 0 {
+		return
+	}
+	for _, df := range dt.getDataFrames(sheet) {
+		for _, col := range cols {
+			if col == "" {
+				continue
+			}
+			if rowIdx != -1 && df.RowIdx != rowIdx {
+				continue
+			}
+			if strings.Contains(df.Value, col) {
+				if rowIdx == -1 {
+					rowIdx = df.RowIdx
+				}
+				dfs = append(dfs, df)
+			}
+
+		}
+	}
+	return
+}
+
+func (dt *DataTable) RowContainsByRowIdx(idx int, str string) (dfs []*DataFrame) {
+	for _, sheet := range dt.getSheets() {
+		dfs = append(dfs, dt.SheetRowContainsByRowIdx(idx, sheet, str)...)
+	}
+	return
+}
+
+func (dt *DataTable) SheetRowContainsByRowIdx(idx int, sheet, str string) (dfs []*DataFrame) {
+	cols := strings.Split(str, ",")
+	if len(cols) == 0 {
+		return
+	}
+	idx -= 1
+	for _, df := range dt.getDataFrames(sheet) {
+		for _, col := range cols {
+			if col == "" {
+				continue
+			}
+			if df.RowIdx != idx {
+				continue
+			}
+			if strings.Contains(df.Value, col) {
+				dfs = append(dfs, df)
+			}
+
+		}
+	}
+	return
+}
+
+func (dt *DataTable) GetRowByRowIdx(index int) (dfs []*DataFrame) {
+	for _, sheet := range dt.getSheets() {
+		dfs = append(dfs, dt.GetSheetRowRowIdx(sheet, index)...)
+	}
+	return
+}
+
+func (dt *DataTable) GetSheetRowRowIdx(sheet string, index int) (dfs []*DataFrame) {
+	index -= 1
 	for _, df := range dt.dfs[sheet] {
 		if df.RowIdx == index {
 			dfs = append(dfs, df)
