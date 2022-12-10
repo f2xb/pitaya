@@ -53,10 +53,10 @@ func read(filePath string, opts ...Options) (*DataTable, error) {
 			}
 			cols = append(cols, str)
 			dfs[sheet] = append(dfs[sheet], &DataFrame{
-				ColIdx: cIdx,
-				RowIdx: rIdx,
-				Value:  str,
-				Sheet:  sheet,
+				Col:   cIdx + 1,
+				Row:   rIdx + 1,
+				Value: str,
+				Sheet: sheet,
 			})
 		}
 		rows = append(rows, cols)

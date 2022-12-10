@@ -61,8 +61,8 @@ func xlsxByExcelize(filePath string, option *Options) (*DataTable, error) {
 				col[cIdx] = val
 
 				dfs[sheet] = append(dfs[sheet], &DataFrame{
-					ColIdx:   cIdx,
-					RowIdx:   rIdx,
+					Col:      cIdx,
+					Row:      rIdx,
 					Sheet:    sheet,
 					Value:    val,
 					RawValue: rawVal,
@@ -97,12 +97,13 @@ func xlsxByXlsx(filePath string, option *Options) (*DataTable, error) {
 		sheets = append(sheets, sh.Name)
 
 		rows := make([][]string, 0)
-		var rIdx, cIdx int
 
+		rIdx := -1
 		if err = sh.ForEachRow(func(r *xlsx.Row) error {
 			rIdx++
 			cols := make([]string, 0)
 
+			cIdx := -1
 			if err = r.ForEachCell(func(c *xlsx.Cell) error {
 				cIdx++
 				if option.TrimSpace {
@@ -110,10 +111,10 @@ func xlsxByXlsx(filePath string, option *Options) (*DataTable, error) {
 				}
 				cols = append(cols, c.Value)
 				dfs[sh.Name] = append(dfs[sh.Name], &DataFrame{
-					ColIdx: cIdx,
-					RowIdx: rIdx,
-					Sheet:  sh.Name,
-					Value:  c.Value,
+					Col:   cIdx + 1,
+					Row:   rIdx + 1,
+					Sheet: sh.Name,
+					Value: c.Value,
 				})
 				return nil
 			}); err != nil {

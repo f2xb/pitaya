@@ -34,10 +34,10 @@ func ReadCsv(filePath string, opts ...Options) (*DataTable, error) {
 			}
 			cols[cIdx] = str
 			dfs[sheet] = append(dfs[sheet], &DataFrame{
-				ColIdx: cIdx,
-				RowIdx: rIdx,
-				Value:  str,
-				Sheet:  sheet,
+				Col:   cIdx + 1,
+				Row:   rIdx + 1,
+				Value: str,
+				Sheet: sheet,
 			})
 		}
 		rows[rIdx] = cols

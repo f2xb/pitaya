@@ -30,10 +30,10 @@ func ReadXls(filePath string, opts ...Options) (*DataTable, error) {
 				}
 				cols = append(cols, val)
 				dfs[shName] = append(dfs[shName], &DataFrame{
-					ColIdx: cIdx,
-					RowIdx: rIdx,
-					Value:  val,
-					Sheet:  shName,
+					Col:   cIdx + 1,
+					Row:   rIdx + 1,
+					Value: val,
+					Sheet: shName,
 				})
 			}
 			rows = append(rows, cols)
