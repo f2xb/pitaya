@@ -293,7 +293,7 @@ func (dt *DataTable) SheetRowContainsByRow(sheet string, row int, strs ...string
 			if df.Row != row {
 				continue
 			}
-			if strings.Index(df.Value, str) > 0 {
+			if strings.Index(df.Value, str) >= 0 {
 				dfs = append(dfs, df)
 			}
 		}

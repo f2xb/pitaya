@@ -61,8 +61,8 @@ func xlsxByExcelize(filePath string, option *Options) (*DataTable, error) {
 				col[cIdx] = val
 
 				dfs[sheet] = append(dfs[sheet], &DataFrame{
-					Col:      cIdx,
-					Row:      rIdx,
+					Col:      cIdx + 1,
+					Row:      rIdx + 1,
 					Sheet:    sheet,
 					Value:    val,
 					RawValue: rawVal,
