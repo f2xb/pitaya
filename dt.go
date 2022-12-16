@@ -318,7 +318,6 @@ func (dt *DataTable) GetRowByRow(index int, cols ...int) (dfs []*DataFrame) {
 // 	GetSheetRowByRow("Sheet1", 1)
 // 	GetSheetRowByRow("Sheet1", 1, 1, 2, 3)
 func (dt *DataTable) GetSheetRowByRow(sheet string, index int, cols ...int) (dfs []*DataFrame) {
-	index -= 1
 	col := len(cols) > 0
 	for _, df := range dt.dfs[sheet] {
 		if df.Row == index {
