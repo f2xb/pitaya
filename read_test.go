@@ -16,7 +16,11 @@ func TestReadCsv(t *testing.T) {
 
 func TestReadDat(t *testing.T) {
 	file := "testdata/1.dat"
-	dt, err := Read(file)
+	// dt, err := Read(file)
+	dt, err := Read(file, Options{
+		RowSep: "",
+		ColSep: "",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +29,11 @@ func TestReadDat(t *testing.T) {
 
 func TestReadTxt(t *testing.T) {
 	file := "testdata/1.txt"
-	dt, err := Read(file)
+	// dt, err := Read(file)
+	dt, err := Read(file, Options{
+		RowSep: "",
+		ColSep: "",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +55,10 @@ func TestReadXls(t *testing.T) {
 
 func TestReadXlsx(t *testing.T) {
 	file := "testdata/4.xlsx"
-	dt, err := Read(file)
+	// dt, err := Read(file)
+	dt, err := Read(file, Options{
+		XlsxLib: "xlsx",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
