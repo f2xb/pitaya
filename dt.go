@@ -4,66 +4,59 @@ import (
 	"strings"
 )
 
-type DataFrame struct {
-	Col, Row int
-	Value    string
-	RawValue string
-	Sheet    string
-}
-
 type DataTable struct {
-	data   map[string][][]string
-	dfs    map[string][]*DataFrame
+	dfs    map[string][]*Row
 	sheets []string
 	option *Options
-	Ext    string
+
+	Ext string
 }
 
-func (dt *DataTable) getDataFrames(sheetName string) []*DataFrame {
-	if val, ok := dt.dfs[sheetName]; ok {
-		return val
+func (dt *DataTable) getDataFrames(sheets ...string) []*Row {
+	sheet := dt.sheets[0]
+	for _, s := range sheets {
+		sheet = s
 	}
-	return dt.dfs[dt.sheets[0]]
+	return dt.dfs[sheet]
 }
 
-func (dt *DataTable) getData(sheetName string) [][]string {
-	if val, ok := dt.data[sheetName]; ok {
-		return val
-	}
-	return dt.data[dt.sheets[0]]
-}
-
-func (dt *DataTable) getSheets() []string {
-	if dt.option.AllSheet {
-		return dt.sheets
-	}
-	return []string{dt.sheets[0]}
-}
-
-// MaxRow get max row, if option AllSheet is true, get all sheet row
+// Foreach for range all df
 // default sheet[0]
-// Example: MaxRow()
-func (dt *DataTable) MaxRow() (total int) {
-	for _, sheet := range dt.getSheets() {
-		total += dt.SheetMaxRow(sheet)
+func (dt *DataTable) Foreach(fn dfFunc, sheets ...string) {
+	for _, row := range dt.getDataFrames(sheets...) {
+		row.Foreach(fn)
 	}
-	return
 }
 
-// SheetMaxRow get sheet max row
-// Example: SheetMaxRow("Sheet1")
-func (dt *DataTable) SheetMaxRow(sheet string) (total int) {
-	return len(dt.getData(sheet))
+// ForeachRow for range all row
+// default sheet[0]
+func (dt *DataTable) ForeachRow(fn rowFunc, sheets ...string) {
+	for idx, row := range dt.getDataFrames(sheets...) {
+		if ok := fn(idx+1, row); ok {
+			return
+		}
+	}
 }
 
-// GetSheets get all sheet name
-// Example: GetSheets()
+// MaxRow Get the maximum number of rows
+// default sheet[0]
+// Example:
+// MaxRow() // return: 4
+// MaxRow("Sheet2") // return: 1
+func (dt *DataTable) MaxRow(sheets ...string) (total int) {
+	return len(dt.getDataFrames(sheets...))
+}
+
+// GetSheets Get all sheet name
+// Example:
+// GetSheets() // return: [Sheet1]
 func (dt *DataTable) GetSheets() []string {
 	return dt.sheets
 }
 
-// GetSheetByIndex get sheet name by index
-// Example: GetSheetByIndex(1)
+// GetSheetByIndex Get sheet name by index
+// Example:
+// GetSheetByIndex(1) // return: Sheet1
 func (dt *DataTable) GetSheetByIndex(idx int) string {
 	for i, sheet := range dt.sheets {
 		if i == idx-1 {
@@ -73,313 +66,183 @@ func (dt *DataTable) GetSheetByIndex(idx int) string {
 	return ""
 }
 
-// Get get df, str eq df.value
+// Last get df, str eq df.value
 // default sheet[0]
-// Example: Get("AA")
-func (dt *DataTable) Get(str string) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.GetSheet(sheet, str)...)
-	}
-	return
-}
-
-// GetSheet get sheet df, str eq df.value
-// Example: GetSheet("Sheet1", "AA")
-func (dt *DataTable) GetSheet(sheet, str string) (dfs []*DataFrame) {
-	for _, df := range dt.getDataFrames(sheet) {
+// Example:
+// -----------------
+// A1	B1	C1
+// A2	aa	bb
+// A3	aa	bb
+// -----------------
+// Last("aa") // return: {Sheet:Sheet1,Row:3,Col:2,Value:aa,RawValue:aa}
+// Last("aa", "Sheet1")
+func (dt *DataTable) Last(str string, sheets ...string) *DataFrame {
+	var obj *DataFrame
+	dt.Foreach(func(df *DataFrame) bool {
 		if df.Value == str {
-			dfs = append(dfs, df)
+			obj = df
 		}
-	}
-	return dfs
+		return false
+	}, sheets...)
+	return obj
 }
 
-// Last get last df, str eq df.value
+// First get df, str eq df.value
 // default sheet[0]
-// Example: Last("AA")
-func (dt *DataTable) Last(str string) *DataFrame {
-	var dfs []*DataFrame
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.GetSheet(sheet, str)...)
-	}
-	length := len(dfs)
-	if length > 0 {
-		return dfs[length-1]
-	}
-	return nil
-}
-
-// SheetLast get sheet last df, str eq df.value
-// Example: SheetLast("Sheet1", "AA")
-func (dt *DataTable) SheetLast(sheet, str string) *DataFrame {
-	dfs := dt.GetSheet(sheet, str)
-	length := len(dfs)
-	if length > 0 {
-		return dfs[length-1]
-	}
-	return nil
-}
-
-// First get first df, str eq df.value
-// default sheet[0]
-// Example: First("AA")
-func (dt *DataTable) First(str string) *DataFrame {
-	for _, sheet := range dt.getSheets() {
-		for _, df := range dt.GetSheet(sheet, str) {
-			if df.Value == str {
-				return df
-			}
+// Example:
+// -----------------
+// A1	B1	C1
+// A2	aa	bb
+// A3	aa	bb
+// -----------------
+// First("aa") // return: {Sheet:Sheet1,Row:2,Col:2,Value:aa,RawValue:aa}
+// First("aa", "Sheet1")
+func (dt *DataTable) First(str string, sheets ...string) *DataFrame {
+	var obj *DataFrame
+	dt.ForeachRow(func(idx int, row *Row) bool {
+		obj = row.First(str)
+		if obj != nil {
+			return true
 		}
-	}
-	return nil
+		return false
+	}, sheets...)
+	return obj
 }
 
-// SheetFirst get sheet first df, str eq df.value
-// Example: SheetFirst("Sheet1", "AA")
-func (dt *DataTable) SheetFirst(sheet, str string) *DataFrame {
-	dfs := dt.GetSheet(sheet, str)
-	if len(dfs) > 0 {
-		return dfs[0]
-	}
-	return nil
-}
-
-// Contains get contains str df
+// Rows Get rows
 // default sheet[0]
-// Example: Contains("AA")
-func (dt *DataTable) Contains(str string) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.SheetContains(sheet, str)...)
-	}
+// Example:
+// -----------------
+// A1	B1	C1
+// A2	B2	C2
+// -----------------
+// Rows()
+// Rows("Sheet1")
+func (dt *DataTable) Rows(sheets ...string) (list []*Row) {
+	return dt.getDataFrames(sheets...)
+}
+
+// Get Get df.Value eq str
+// default sheet[0]
+// Example:
+// -----------------
+// A1	B1	C1
+// A2	aa	bb
+// A3	aa	bb
+// -----------------
+// Get("A1") // return: [A1]
+// Get("A1", "Sheet1") // return: [A1]
+func (dt *DataTable) Get(str string, sheets ...string) (list []*DataFrame) {
+	dt.Foreach(func(df *DataFrame) bool {
+		if df.Value == str {
+			list = append(list, df)
+		}
+		return false
+	}, sheets...)
 	return
 }
 
-// SheetContains get sheet contains str df
-// Example: SheetContains("Sheet1", "AA")
-func (dt *DataTable) SheetContains(sheet, str string) (dfs []*DataFrame) {
-	for _, df := range dt.getDataFrames(sheet) {
+// Contains Get contains str df
+// default sheet[0]
+// Example:
+// -----------------
+// A1	B1	C1
+// A2	aa	bb
+// A3	aa	bb
+// -----------------
+// Contains("A") // return: [A1, A2, A3]
+// Contains("A", "Sheet1") // return: [A1, A2, A3]
+func (dt *DataTable) Contains(str string, sheets ...string) (list []*DataFrame) {
+	dt.Foreach(func(df *DataFrame) bool {
 		if strings.Index(df.Value, str) >= 0 {
-			dfs = append(dfs, df)
+			list = append(list, df)
 		}
-	}
+		return false
+	}, sheets...)
 	return
 }
 
 // GetCol get col
 // default sheet[0]
-// Example: GetCol(1, 2)
-func (dt *DataTable) GetCol(cols ...int) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.GetSheetCol(sheet, cols...)...)
-	}
-	return
-}
-
-// GetSheetCol get sheet col
-// default all col
-// Example: GetSheetCol("Sheet1", 1, 2)
-func (dt *DataTable) GetSheetCol(sheet string, cols ...int) (dfs []*DataFrame) {
-	if len(cols) == 0 {
-		return dt.dfs[sheet]
-	}
-	for _, df := range dt.dfs[sheet] {
-		for _, col := range cols {
-			if df.Col == col {
-				dfs = append(dfs, df)
-			}
+// Example:
+// -----------------
+// A1	B1	C1
+// A2	aa	bb
+// A3	aa	bb
+// -----------------
+// GetCol(1) // return: A1, A2, A3
+// GetCol(2, "Sheet1") // return: B1, aa, aa
+func (dt *DataTable) GetCol(col int, sheets ...string) (c *Col) {
+	list := make([]*DataFrame, 0)
+	dt.Foreach(func(df *DataFrame) bool {
+		if df.Col == col {
+			list = append(list, df)
 		}
-	}
-	return
+		return false
+	}, sheets...)
+	return newCol(col, list)
 }
 
 // GetRow get row
 // default sheet[0]
-// Example: GetRow(1, 2)
-func (dt *DataTable) GetRow(rows ...int) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.GetSheetRow(sheet, rows...)...)
-	}
-	return
-}
-
-// GetSheetRow get sheet row
-// default all row
-// Example: GetSheetRow("Sheet1", 1, 2)
-func (dt *DataTable) GetSheetRow(sheet string, rows ...int) (dfs []*DataFrame) {
-	if len(rows) == 0 {
-		return dt.dfs[sheet]
-	}
-	for _, df := range dt.dfs[sheet] {
-		for _, row := range rows {
-			if df.Row == row {
-				dfs = append(dfs, df)
-			}
-		}
-	}
-	return
-}
-
-// RowContains get contains str row
-// default sheet[0]
-// Example: RowContains("AAA")
-func (dt *DataTable) RowContains(strs ...string) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.SheetRowContains(sheet, strs...)...)
-	}
-	return
-}
-
-// SheetRowContains get sheet contains str row
 // Example:
-// 	SheetRowContains("Sheet1", "AAA")
-// 	SheetRowContains("Sheet1", "AAA", "BBB")
-func (dt *DataTable) SheetRowContains(sheet string, strs ...string) (dfs []*DataFrame) {
-	if len(strs) == 0 {
-		return
-	}
-	row := -1
-	for _, df := range dt.getDataFrames(sheet) {
-		for _, str := range strs {
-			if str == "" {
-				continue
-			}
-			if row != -1 && df.Row != row {
-				continue
-			}
-			if strings.Contains(df.Value, str) {
-				if row == -1 {
-					row = df.Row
-				}
-				dfs = append(dfs, df)
-			}
-
+// -----------------
+// A1	B1	C1
+// A2	aa	bb
+// A3	aa	bb
+// -----------------
+// GetRow(1) // return: A1, B1, C1
+// GetRow(2, "Sheet1") // return: A2, aa, bb
+func (dt *DataTable) GetRow(row int, sheets ...string) (r *Row) {
+	dt.ForeachRow(func(idx int, rows *Row) bool {
+		if idx == row {
+			r = rows
+			return true
 		}
-	}
+		return false
+	}, sheets...)
 	return
 }
 
-// RowContainsByRow get contains str row by row
+// GetCell get cell by row, col
 // default sheet[0]
 // Example:
-// 	RowContainsByRow(1)
-// 	RowContainsByRow(1, "AAA")
-func (dt *DataTable) RowContainsByRow(row int, strs ...string) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.SheetRowContainsByRow(sheet, row, strs...)...)
-	}
-	return
-}
-
-// SheetRowContainsByRow get sheet contains str row by row
-// Example:
-// 	SheetRowContainsByRow("Sheet1", 1)
-// 	SheetRowContainsByRow("Sheet1", 1, "AA")
-func (dt *DataTable) SheetRowContainsByRow(sheet string, row int, strs ...string) (dfs []*DataFrame) {
-	list := dt.getDataFrames(sheet)
-	if len(strs) == 0 {
-		for _, df := range list {
-			if df.Row != row {
-				continue
-			}
-			dfs = append(dfs, df)
-		}
-		return
-	}
-	for _, df := range list {
-		for _, str := range strs {
-			if str == "" {
-				continue
-			}
-			if df.Row != row {
-				continue
-			}
-			if strings.Index(df.Value, str) >= 0 {
-				dfs = append(dfs, df)
-			}
-		}
-	}
-	return
-}
-
-// GetRowByRow get row by row or cols
-// default: sheet[0]
-// Example:
-// 	GetRowByRow(1)
-// 	GetRowByRow(1, 1, 2, 3)
-func (dt *DataTable) GetRowByRow(index int, cols ...int) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		dfs = append(dfs, dt.GetSheetRowByRow(sheet, index, cols...)...)
-	}
-	return
-}
-
-// GetSheetRowByRow get sheet row by row or cols
-// Example:
-// 	GetSheetRowByRow("Sheet1", 1)
-// 	GetSheetRowByRow("Sheet1", 1, 1, 2, 3)
-func (dt *DataTable) GetSheetRowByRow(sheet string, index int, cols ...int) (dfs []*DataFrame) {
-	col := len(cols) > 0
-	for _, df := range dt.dfs[sheet] {
-		if df.Row == index {
-			if col {
-				for _, idx := range cols {
-					if df.Col == idx {
-						dfs = append(dfs, df)
-					}
-				}
-			} else {
-				dfs = append(dfs, df)
-			}
-		}
-	}
-	return
-}
-
-// GetCellByIndex get cell by row, col
-// default sheet[0]
-// Example: GetCellByIndex(1, 1)
-func (dt *DataTable) GetCellByIndex(row, col int) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		df := dt.GetSheetCellByIndex(sheet, row, col)
-		if df == nil {
-			continue
-		}
-		dfs = append(dfs, df)
-	}
-	return
-}
-
-// GetSheetCellByIndex get sheet cell by row, col
-// Example: GetSheetCellByIndex("Sheet1", 1, 1)
-func (dt *DataTable) GetSheetCellByIndex(sheet string, row, col int) *DataFrame {
-	for _, df := range dt.getDataFrames(sheet) {
+// -----------------
+// A1	B1	C1
+// A2	aaa	bb
+// A3	aaa	bb
+// A4	aaa	bb
+// -----------------
+// GetCell(1, 1) // return: A1
+// GetCell(1, 3, "Sheet1") // return: B1
+func (dt *DataTable) GetCell(row, col int, sheets ...string) *DataFrame {
+	obj := new(DataFrame)
+	dt.Foreach(func(df *DataFrame) bool {
 		if df.Row == row && df.Col == col {
-			return df
+			obj = df
+			return true
 		}
-	}
-	return nil
+		return false
+	}, sheets...)
+	return obj
 }
 
-// GetCell get cell by row str, col str
+// GetCellByVal get cell by row str, col str
 // default sheet[0]
-// Example: GetCell("A001", "001")
-func (dt *DataTable) GetCell(row, col string) (dfs []*DataFrame) {
-	for _, sheet := range dt.getSheets() {
-		df := dt.GetSheetCell(sheet, row, col)
-		if df == nil {
-			continue
-		}
-		dfs = append(dfs, df)
-	}
-	return
-}
-
-// GetSheetCell get sheet cell by row str, col str
-// Example: GetSheetCell("Sheet1", "A001", "001")
-func (dt *DataTable) GetSheetCell(sheet, row, col string) *DataFrame {
+// Example:
+// -----------------
+// A1	B1	C1
+// A2	aaa	bb
+// A3	aaa	bb
+// A4	aaa	bb
+// -----------------
+// GetCellByVal("A4", "C1") // return: bb
+// GetCellByVal("A4", "B1", "Sheet1") // return: aaa
+func (dt *DataTable) GetCellByVal(row, col string, sheets ...string) *DataFrame {
 	rowIdx := -1
 	colIdx := -1
-	for _, df := range dt.getDataFrames(sheet) {
+	obj := new(DataFrame)
+	dt.Foreach(func(df *DataFrame) bool {
 		if rowIdx == -1 && df.Value == row {
 			rowIdx = df.Row
 		}
@@ -387,8 +250,10 @@ func (dt *DataTable) GetSheetCell(sheet, row, col string) *DataFrame {
 			colIdx = df.Col
 		}
 		if df.Row == rowIdx && df.Col == colIdx {
-			return df
+			obj = df
+			return true
 		}
-	}
-	return nil
+		return false
+	}, sheets...)
+	return obj
 }

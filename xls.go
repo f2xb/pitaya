@@ -13,36 +13,35 @@ func ReadXls(filePath string, opts ...Options) (*DataTable, error) {
 	}
 
 	option := parseOptions(opts...)
-	data := make(map[string][][]string)
+
 	sheets := make([]string, wb.GetNumberSheets())
-	dfs := make(map[string][]*DataFrame)
+
+	dfs := make(map[string][]*Row)
 
 	for i, sheet := range wb.GetSheets() {
 		shName := sheet.GetName()
 		sheets[i] = shName
-		rows := make([][]string, 0)
+		list := make([]*Row, sheet.GetNumberRows())
 		for rIdx, row := range sheet.GetRows() {
-			cols := make([]string, 0)
+			var rowDfs []*DataFrame
 			for cIdx, cell := range row.GetCols() {
 				val := cell.GetString()
 				if option.TrimSpace {
 					val = strings.TrimSpace(val)
 				}
-				cols = append(cols, val)
-				dfs[shName] = append(dfs[shName], &DataFrame{
+				rowDfs = append(rowDfs, &DataFrame{
 					Col:   cIdx + 1,
 					Row:   rIdx + 1,
 					Value: val,
 					Sheet: shName,
 				})
 			}
-			rows = append(rows, cols)
+			list = append(list, newRow(rIdx+1, rowDfs))
 		}
-		data[shName] = rows
+		dfs[shName] = list
 	}
 
 	return &DataTable{
-		data:   data,
 		dfs:    dfs,
 		sheets: sheets,
 		option: option,

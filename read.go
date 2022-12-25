@@ -40,31 +40,28 @@ func read(filePath string, opts ...Options) (*DataTable, error) {
 	option := parseOptions(opts...)
 	option.AllSheet = false
 
-	data := make(map[string][][]string)
-	dfs := make(map[string][]*DataFrame)
+	dfs := make(map[string][]*Row)
 	sheet := "Sheet1"
-	rows := make([][]string, 0)
 
+	list := make([]*Row, 0)
 	for rIdx, row := range strings.Split(string(file), option.RowSep) {
-		cols := make([]string, 0)
+		var rowDfs []*DataFrame
 		for cIdx, str := range strings.Split(row, option.ColSep) {
 			if option.TrimSpace {
 				str = strings.TrimSpace(str)
 			}
-			cols = append(cols, str)
-			dfs[sheet] = append(dfs[sheet], &DataFrame{
+			rowDfs = append(rowDfs, &DataFrame{
 				Col:   cIdx + 1,
 				Row:   rIdx + 1,
 				Value: str,
 				Sheet: sheet,
 			})
 		}
-		rows = append(rows, cols)
+		list = append(list, newRow(rIdx+1, rowDfs))
 	}
-	data[sheet] = rows
 
+	dfs[sheet] = list
 	return &DataTable{
-		data:   data,
 		dfs:    dfs,
 		sheets: []string{sheet},
 		option: option,

@@ -25,19 +25,35 @@ func xlsxByExcelize(filePath string, option *Options) (*DataTable, error) {
 	}
 	defer f.Close()
 
-	data := make(map[string][][]string)
-	dfs := make(map[string][]*DataFrame)
+	dfs := make(map[string][]*Row)
 
 	for _, sheet := range f.GetSheetList() {
-		rows, err := f.GetRows(sheet)
+
+		rows, err := f.Rows(sheet)
 		if err != nil {
 			return nil, err
 		}
-		row := make([][]string, len(rows))
-		for rIdx, cols := range rows {
-			col := make([]string, len(cols))
 
-			for cIdx := range rows[rIdx] {
+		maxRow, maxCol := 0, 0
+
+		for rows.Next() {
+			maxRow++
+			cols, err := rows.Columns()
+			if err != nil {
+				return nil, err
+			}
+			if len(cols) > maxCol {
+				maxCol = len(cols)
+			}
+		}
+		if err = rows.Close(); err != nil {
+			return nil, err
+		}
+
+		list := make([]*Row, maxRow)
+		for rIdx := 0; rIdx < maxRow; rIdx++ {
+			var rowDfs []*DataFrame
+			for cIdx := 0; cIdx < maxCol; cIdx++ {
 				axis, err := excelize.CoordinatesToCellName(cIdx+1, rIdx+1)
 				if err != nil {
 					return nil, err
@@ -58,9 +74,7 @@ func xlsxByExcelize(filePath string, option *Options) (*DataTable, error) {
 					rawVal = strings.TrimSpace(rawVal)
 				}
 
-				col[cIdx] = val
-
-				dfs[sheet] = append(dfs[sheet], &DataFrame{
+				rowDfs = append(rowDfs, &DataFrame{
 					Col:      cIdx + 1,
 					Row:      rIdx + 1,
 					Sheet:    sheet,
@@ -68,13 +82,12 @@ func xlsxByExcelize(filePath string, option *Options) (*DataTable, error) {
 					RawValue: rawVal,
 				})
 			}
-			row[rIdx] = col
+			list[rIdx] = newRow(rIdx+1, rowDfs)
 		}
-		data[sheet] = row
+		dfs[sheet] = list
 	}
 
 	return &DataTable{
-		data:   data,
 		dfs:    dfs,
 		sheets: f.GetSheetList(),
 		option: option,
@@ -89,19 +102,19 @@ func xlsxByXlsx(filePath string, option *Options) (*DataTable, error) {
 		return nil, err
 	}
 
-	data := make(map[string][][]string)
-	dfs := make(map[string][]*DataFrame)
+	dfs := make(map[string][]*Row)
 	sheets := make([]string, 0)
 
 	for _, sh := range wb.Sheets {
 		sheets = append(sheets, sh.Name)
 
-		rows := make([][]string, 0)
+		list := make([]*Row, 0)
 
 		rIdx := -1
 		if err = sh.ForEachRow(func(r *xlsx.Row) error {
 			rIdx++
-			cols := make([]string, 0)
+
+			var rowDfs []*DataFrame
 
 			cIdx := -1
 			if err = r.ForEachCell(func(c *xlsx.Cell) error {
@@ -109,8 +122,7 @@ func xlsxByXlsx(filePath string, option *Options) (*DataTable, error) {
 				if option.TrimSpace {
 					c.Value = strings.TrimSpace(c.Value)
 				}
-				cols = append(cols, c.Value)
-				dfs[sh.Name] = append(dfs[sh.Name], &DataFrame{
+				rowDfs = append(rowDfs, &DataFrame{
 					Col:   cIdx + 1,
 					Row:   rIdx + 1,
 					Sheet: sh.Name,
@@ -120,16 +132,15 @@ func xlsxByXlsx(filePath string, option *Options) (*DataTable, error) {
 			}); err != nil {
 				return err
 			}
-			rows = append(rows, cols)
+			list = append(list, newRow(rIdx+1, rowDfs))
 			return nil
 		}); err != nil {
 			return nil, err
 		}
-		data[sh.Name] = rows
+		dfs[sh.Name] = list
 	}
 
 	return &DataTable{
-		data:   data,
 		dfs:    dfs,
 		sheets: sheets,
 		option: option,

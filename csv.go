@@ -21,31 +21,28 @@ func ReadCsv(filePath string, opts ...Options) (*DataTable, error) {
 	option := parseOptions(opts...)
 	option.AllSheet = false
 
-	data := make(map[string][][]string)
-	dfs := make(map[string][]*DataFrame)
+	dfs := make(map[string][]*Row)
 	sheet := "Sheet1"
-	rows := make([][]string, len(records))
 
+	list := make([]*Row, len(records))
 	for rIdx, record := range records {
-		cols := make([]string, len(record))
+		var rowDfs []*DataFrame
 		for cIdx, str := range record {
 			if option.TrimSpace {
 				str = strings.TrimSpace(str)
 			}
-			cols[cIdx] = str
-			dfs[sheet] = append(dfs[sheet], &DataFrame{
+			rowDfs = append(rowDfs, &DataFrame{
 				Col:   cIdx + 1,
 				Row:   rIdx + 1,
 				Value: str,
 				Sheet: sheet,
 			})
 		}
-		rows[rIdx] = cols
+		list[rIdx] = newRow(rIdx+1, rowDfs)
 	}
-	data[sheet] = rows
 
+	dfs[sheet] = list
 	return &DataTable{
-		data:   data,
 		dfs:    dfs,
 		sheets: []string{sheet},
 		option: option,
