@@ -36,7 +36,7 @@ func ReadXls(filePath string, opts ...Options) (*DataTable, error) {
 					Sheet: shName,
 				})
 			}
-			list = append(list, newRow(rIdx+1, rowDfs))
+			list[rIdx] = newRow(rIdx+1, rowDfs)
 		}
 		dfs[shName] = list
 	}
